@@ -80,3 +80,52 @@ there will of course be bins that form based on number of friends, that we can u
 i'm going to be billed by the GB, so i can get a good amount of data from a single GB, low enough that it doesn't matter to count. something like 12 million accounts or something, minus a bit for the headers. I think most people have between 25-100 friends, and at 200 bytes for headers thats like 5% overhead. so maybe closer to 11 million accounts per GB.
 
 Steam limits us however to 100k requests per day per api key. I don't know if this is actually enforced per api key or per IP. I am going to assume this rate limit is enforced on an IP basis, and will be evading it. If it doesn't work, I will have to get more steam accounts.
+
+## database
+i want to use sqlite to get started because it's easy to do and simple enough to get going. I will have a table for accounts, and one for relationships. I'm probably going to just run this on my laptop or maybe a single node or something, so i can just hostpath mount the sqlite file and be done.
+
+###### accounts schema
+```sql
+-- accounts table
+CREATE TABLE accounts (
+  steamid INTEGER PRIMARY KEY,
+  status TEXT DEFAULT 'pending',
+  last_updated INTEGER,
+  num_friends INTEGER,
+  is_private BOOLEAN DEFAULT 0,
+  locked_by TEXT
+  lock_timestamp INTEGER
+);
+```
+
+we need the locking bit to assign an account to a worker so we can scale
+
+###### relationships schema
+```sql
+-- friendships table
+CREATE TABLE friendships (
+  account_steamid INTEGER,
+  friend_steamid INTEGER,
+  friend_since INTEGER,
+  PRIMARY KEY (account_steamid, friend_steamid),
+  FOREIGN KEY (account_steamid) REFERENCES accounts(steamid),
+  FOREIGN KEY (friend_steamid) REFERENCES accounts(steamid)
+);
+```
+
+i think this should be like 20-30 bytes per account, and 20-30 per relationship. I think the average account probably has 50 or so friends, and i'm targeting 10 million accounts or so to start.
+
+## proxies
+we are using bright data for proxying, which costs us $0.54/gb of data. they provide a cacert for you to load to have the proxy working but im just going to ignore ssl errors because it doesn't matter to me for this.
+
+we're using the datacenter proxies, and are just allowing any ip, but are restricting it to US ips, which probably doesn't matter but its more sussy to be all over the place.
+
+here's an example curl command using the proxy:
+```shell
+curl -k -i \
+--proxy brd.superproxy.io:22225 \
+--proxy-user brd-customer-[username]-zone-[zonename]-country-us:[password] \
+"https://google.com/"
+```
+
+i think this should just be random every time, so i'm going to full send it with a burner steam account and see if i can get away with a single api key.
