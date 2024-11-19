@@ -8,3 +8,5 @@ montior.sh
 *.sh
 *.sql
 *.db*
+alloy/config.alloy
+.DS_Store
