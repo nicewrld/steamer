@@ -1,7 +1,9 @@
 package main
 
 import (
+	"context"
 	"log"
+	"time"
 )
 
 func main() {
@@ -36,8 +38,20 @@ func main() {
 		log.Fatalf("Failed to commit transaction: %v", err)
 	}
 
-	StartWorkers(config)
+	var ctx context.Context
+	var cancel context.CancelFunc
 
-	// Wait indefinitely to keep the application running
-	select {}
+	if config.RunDurationMinutes > 0 {
+		ctx, cancel = context.WithTimeout(context.Background(), time.Duration(config.RunDurationMinutes)*time.Minute)
+	} else {
+		ctx, cancel = context.WithCancel(context.Background())
+	}
+	defer cancel()
+
+	StartWorkers(ctx, config)
+
+	// Wait for the context to be done
+	<-ctx.Done()
+
+	log.Println("Shutting down gracefully")
 }

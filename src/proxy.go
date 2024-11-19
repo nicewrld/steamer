@@ -9,13 +9,20 @@ import (
 )
 
 func CreateHTTPClient(config Config) *http.Client {
-	proxyURL, _ := url.Parse(fmt.Sprintf(
-		"http://%s:%s@%s:%s",
-		config.ProxyUser, config.ProxyPassword, config.ProxyHost, config.ProxyPort,
-	))
+	var proxyFunc func(*http.Request) (*url.URL, error)
+
+	if !config.DisableProxy {
+		proxyURL, _ := url.Parse(fmt.Sprintf(
+			"http://%s:%s@%s:%s",
+			config.ProxyUser, config.ProxyPassword, config.ProxyHost, config.ProxyPort,
+		))
+		proxyFunc = http.ProxyURL(proxyURL)
+	} else {
+		proxyFunc = nil // Do not use a proxy
+	}
 
 	transport := &http.Transport{
-		Proxy: http.ProxyURL(proxyURL),
+		Proxy: proxyFunc,
 		TLSClientConfig: &tls.Config{
 			InsecureSkipVerify: true, // Ignoring SSL errors as specified
 		},

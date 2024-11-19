@@ -1,45 +1,70 @@
 package main
 
 import (
+	"context"
 	"database/sql"
 	"errors" // Import the errors package
 	"log"
 	"strconv"
+	"sync"
 	"time"
 
 	"github.com/google/uuid"
 )
 
-func StartWorkers(config Config) {
+func StartWorkers(ctx context.Context, config Config) {
+	var wg sync.WaitGroup
+
 	for i := 0; i < config.MaxWorkers; i++ {
+		wg.Add(1)
 		go func() {
+			defer wg.Done()
 			workerID := generateWorkerID()
-			RunWorker(workerID, config)
+			RunWorker(ctx, workerID, config)
 		}()
 	}
 
-	// Wait indefinitely
-	select {}
+	// Wait for all workers to finish
+	wg.Wait()
 }
 
 func generateWorkerID() string {
 	return uuid.New().String()
 }
 
-func RunWorker(workerID string, config Config) {
+func RunWorker(ctx context.Context, workerID string, config Config) {
 	client := CreateHTTPClient(config)
 	for {
+		// Check if context is done
+		select {
+		case <-ctx.Done():
+			log.Printf("[%s] Shutting down worker", workerID)
+			return
+		default:
+			// Proceed with processing
+		}
+
 		account, err := LockAccount(workerID, config.LockTimeout)
 		if err != nil {
 			if errors.Is(err, sql.ErrNoRows) {
 				// No pending accounts; wait and try again
-				time.Sleep(1 * time.Second)
-				continue
+				select {
+				case <-ctx.Done():
+					log.Printf("[%s] Shutting down worker", workerID)
+					return
+				case <-time.After(1 * time.Second):
+					continue
+				}
 			} else {
 				log.Printf("[%s] Error locking account: %v", workerID, err)
 				// Sleep and continue in case of transient errors
-				time.Sleep(1 * time.Second)
-				continue
+				select {
+				case <-ctx.Done():
+					log.Printf("[%s] Shutting down worker", workerID)
+					return
+				case <-time.After(1 * time.Second):
+					continue
+				}
 			}
 		}
 
