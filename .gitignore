@@ -3,7 +3,7 @@
 *.parquet
 montior.sh
 *.db
-.env
+.env*
 *.ipynb
 *.sh
 *.sql
