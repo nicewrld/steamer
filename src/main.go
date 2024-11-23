@@ -44,6 +44,7 @@ func main() {
 	}
 
 	InitDatabase(config.DatabasePath)
+	defer db.Close()
 
 	// Seed the database with the initial account
 	tx, err := db.Begin()
