@@ -10,3 +10,5 @@ montior.sh
 *.db*
 alloy/config.alloy
 .DS_Store
+.aider*
+.env

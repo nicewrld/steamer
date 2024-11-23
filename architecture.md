@@ -129,3 +129,7 @@ curl -k -i \
 ```
 
 i think this should just be random every time, so i'm going to full send it with a burner steam account and see if i can get away with a single api key.
+
+## week two
+
+so, an individual api key definitely didn't work. I have a solution for that, but i'm not publishing it here just yet. Once i'm finished with my goals, I will publish the details here. I ran thru my brightdata balance quickly, and they're pretty expensive but worked WONDERFULLY. I would absolutely recommend them for this kind of work, if you aren't super budget restrained. I swapped to webshare, which is much cheaper, but I have some weird latency issues sometimes. I'm gonna try a datadog free trial to get their apm, since i'm used to using that at work.
