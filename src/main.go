@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"log"
+	"os"
 	"time"
 
 	"gopkg.in/DataDog/dd-trace-go.v1/profiler"
@@ -11,16 +12,14 @@ import (
 func main() {
 
 	err := profiler.Start(
-		profiler.WithService("<SERVICE_NAME>"),
-		profiler.WithEnv("<ENVIRONMENT>"),
-		profiler.WithVersion("<APPLICATION_VERSION>"),
-		profiler.WithTags("<KEY1>:<VALUE1>", "<KEY2>:<VALUE2>"),
+		profiler.WithService(os.Getenv("DD_SERVICE")),
+		profiler.WithEnv(os.Getenv("DD_ENV")),
+		profiler.WithVersion(os.Getenv("DD_VERSION")),
 		profiler.WithProfileTypes(
 			profiler.CPUProfile,
 			profiler.HeapProfile,
 			// The profiles below are disabled by default to keep overhead
 			// low, but can be enabled as needed.
-
 			profiler.BlockProfile,
 			profiler.MutexProfile,
 			profiler.GoroutineProfile,
