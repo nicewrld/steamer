@@ -30,6 +30,12 @@ func InitDatabase(databasePath string) {
 		log.Fatalf("Failed to set WAL mode: %v", err)
 	}
 
+	// Set journal size limit to 50MB
+	_, err = db.Exec("PRAGMA journal_size_limit = 52428800;")
+	if err != nil {
+		log.Fatalf("Failed to set journal size limit: %v", err)
+	}
+
 	createTables()
 }
 
@@ -154,6 +160,22 @@ func UpdateAccountAfterProcessing(account *Account) error {
 }
 
 func AddFriendships(accountSteamID int64, friendships []Friendship) error {
+	batchSize := 1000 // Limit batch size to control transaction size
+	for i := 0; i < len(friendships); i += batchSize {
+		end := i + batchSize
+		if end > len(friendships) {
+			end = len(friendships)
+		}
+		batch := friendships[i:end]
+		err := addFriendshipBatch(accountSteamID, batch)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func addFriendshipBatch(accountSteamID int64, batch []Friendship) error {
 	tx, err := db.Begin()
 	if err != nil {
 		return err
@@ -179,7 +201,7 @@ func AddFriendships(accountSteamID int64, friendships []Friendship) error {
 	}
 	defer stmtAccount.Close()
 
-	for _, friendship := range friendships {
+	for _, friendship := range batch {
 		_, err = stmtFriendship.Exec(friendship.AccountSteamID, friendship.FriendSteamID, friendship.FriendSince)
 		if err != nil {
 			tx.Rollback()
@@ -187,7 +209,7 @@ func AddFriendships(accountSteamID int64, friendships []Friendship) error {
 		}
 
 		// Add the friend account within the same transaction
-		err = AddAccount(friendship.FriendSteamID, tx)
+		_, err = stmtAccount.Exec(friendship.FriendSteamID)
 		if err != nil {
 			tx.Rollback()
 			return err

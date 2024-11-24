@@ -77,5 +77,13 @@ func main() {
 	// Wait for the context to be done
 	<-ctx.Done()
 
+	log.Println("Workers have finished, performing database checkpoint")
+
+	// Perform a manual checkpoint to reset the WAL file
+	_, err = db.Exec("PRAGMA wal_checkpoint(TRUNCATE);")
+	if err != nil {
+		log.Fatalf("Failed to checkpoint WAL: %v", err)
+	}
+
 	log.Println("Shutting down gracefully")
 }

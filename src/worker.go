@@ -1,9 +1,10 @@
+// src/worker.go
 package main
 
 import (
 	"context"
 	"database/sql"
-	"errors" // Import the errors package
+	"errors"
 	"log"
 	"strconv"
 	"sync"
