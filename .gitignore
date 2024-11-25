@@ -12,3 +12,4 @@ alloy/config.alloy
 .DS_Store
 .aider*
 .env
+src/steamer
