@@ -1,3 +1,4 @@
+// src/config.go
 package main
 
 import (

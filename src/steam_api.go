@@ -1,3 +1,4 @@
+// src/steam_api.go
 package main
 
 import (
